@@ -18,46 +18,87 @@ app.post("/signup", async (req, res) => {
   }
 
   try {
-    await prismaClient.user.create({
+    const user = await prismaClient.user.create({
       data: {
         email: parsedData.data?.username,
         password: parsedData.data.password,
         name: parsedData.data.name,
       },
     });
+
+    res.json({
+      userId: user.id,
+    });
   } catch (error) {
     res.status(411).json({
-      message: "User already exist with this username"
-    })
+      message: "User already exist with this username",
+      error,
+    });
   }
 });
 
-app.post("/signin", (req, res) => {
-  const data = SiginSchema.safeParse(req.body);
-  if (!data.success) {
+app.post("/signin", async (req, res) => {
+  const parsedData = SiginSchema.safeParse(req.body);
+  if (!parsedData.success) {
     res.status(411).json({
       message: "Incorrect Inputs",
     });
     return;
   }
 
-  const username = data.data?.username;
+  const user = await prismaClient.user.findFirst({
+    where: {
+      email: parsedData.data.username,
+      password: parsedData.data.password,
+    },
+  });
 
-  const token = jwt.sign(username, JWT_SECRET);
+  if (!user) {
+    res.status(403).json({
+      messsage: "Not authorized",
+    });
+  }
+
+  const token = jwt.sign({ userId: user?.id }, JWT_SECRET);
 
   res.json({
     token,
   });
 });
 
-app.post("/room", (req, res) => {
-  const data = CreateRoomSchema.safeParse(req.body);
-  if (!data.success) {
+app.post("/room", middleware, async (req, res) => {
+  const parsedData = CreateRoomSchema.safeParse(req.body);
+  if (!parsedData.success) {
     res.status(411).json({
       message: "Incorrect Inputs",
     });
     return;
   }
+  //@ts-ignore
+  const userId = req.userId;
+
+  try {
+    const room = await prismaClient.room.create({
+      data: {
+        slug: parsedData.data.name,
+        adminId: userId,
+      },
+    });
+
+    res.json({
+      roomId: room.id,
+    });
+  } catch (error) {
+    res.status(411).json({
+      message: "Room already exist with this name",
+    });
+  }
+  const room = await prismaClient.room.create({
+    data: {
+      slug: parsedData.data.name,
+      adminId: userId,
+    },
+  });
 });
 
 app.listen(3001);
