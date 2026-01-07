@@ -2,6 +2,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { CreateUserSchema, SiginSchema, CreateRoomSchema } from "@repo/common/types";
+import { middleware } from "./middleware";
 
 const app = express();
 app.use(express.json());
@@ -24,6 +25,15 @@ app.post("/signin", (req, res) => {
     });
     return;
   }
+
+  const username = data.data?.username;
+
+  const token = jwt.sign(username, JWT_SECRET);
+
+  res.json({
+    token
+  })
+
 });
 
 app.post("/room", (req, res) => {
