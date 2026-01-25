@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { CreateUserSchema, SiginSchema, CreateRoomSchema } from "@repo/common/types";
@@ -7,6 +8,7 @@ import { prismaClient } from "@repo/db/client";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 app.post("/signup", async (req, res) => {
   const parsedData = CreateUserSchema.safeParse(req.body);
@@ -105,30 +107,30 @@ app.get("/chats/:roomId", async (req, res) => {
   const roomId = Number(req.params.roomId);
   const messages = await prismaClient.chat.findMany({
     where: {
-      roomId: roomId
+      roomId: roomId,
     },
     orderBy: {
-      id: "desc"
+      id: "desc",
     },
-    take: 50
-  })
+    take: 50,
+  });
 
   res.json({
-    messages
-  })
-}) 
+    messages,
+  });
+});
 
 app.get("/room/:slug", async (req, res) => {
   const slug = req.params.slug;
   const room = await prismaClient.room.findFirst({
     where: {
-      slug
+      slug,
     },
-  })
+  });
 
   res.json({
-    room
-  })
-}) 
+    room,
+  });
+});
 
 app.listen(3001);
