@@ -1,28 +1,88 @@
-import initDraw from "@/draw";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { IconButton } from "./IconButton";
+import { ArrowRight, Circle, Eraser, LineSquiggle, Square, Text } from "lucide-react";
+import { Game } from "@/draw/Game";
 
-export default function Canvas({roomId, socket}: {
-  roomId: string,
-  socket: WebSocket
-}) {
+export type Tool = "circle" | "rect" | "pencil" | "arrow" | "text" | "eraser";
+
+export default function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [selectedTool, setSelectedTool] = useState<Tool>("circle");
+  const [game, setGame] = useState<Game>();
+
+  useEffect(() => {
+    game?.setTool(selectedTool);
+  }, [selectedTool, game]);
 
   useEffect(() => {
     if (canvasRef.current) {
-      initDraw(canvasRef.current, roomId, socket);
+      const g = new Game(canvasRef.current, roomId, socket);
+      setGame(g);
+
+      return () => {
+        g.destroy();
+      };
     }
-  }, [canvasRef, roomId]);
+  }, [canvasRef]);
 
   return (
     <>
       <canvas
         ref={canvasRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
         className="block touch-none" // 'block' removes default inline spacing
       />
-      <div className="absolute bottom-0 right-0 m-6 p-2 border rounded">
-        <div className="text-gray-300 bg-gray-500 rounded px-1 mb-1">Rect</div>
-        <div className="text-gray-300 bg-gray-500 rounded px-1 mt-1">Circle</div>
-      </div>
+      <Topbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
     </>
+  );
+}
+
+function Topbar({ selectedTool, setSelectedTool }: { selectedTool: Tool; setSelectedTool: (s: Tool) => void }) {
+  return (
+    <div className="absolute flex top-0 inset-x-0 mx-auto w-min p-1 gap-1 mt-4 bg-[#232329] rounded-lg">
+      <IconButton
+        icon={<ArrowRight size={15} strokeWidth={2} />}
+        onClick={() => {
+          setSelectedTool("arrow");
+        }}
+        isActivated={selectedTool === "arrow"}
+      />
+      <IconButton
+        icon={<Square size={15} strokeWidth={2} />}
+        onClick={() => {
+          setSelectedTool("rect");
+        }}
+        isActivated={selectedTool === "rect"}
+      />
+      <IconButton
+        icon={<Circle size={15} strokeWidth={2} />}
+        onClick={() => {
+          setSelectedTool("circle");
+        }}
+        isActivated={selectedTool === "circle"}
+      />
+      <IconButton
+        icon={<Text size={15} strokeWidth={2} />}
+        onClick={() => {
+          setSelectedTool("text");
+        }}
+        isActivated={selectedTool === "text"}
+      />
+      <IconButton
+        icon={<LineSquiggle size={15} strokeWidth={2} />}
+        onClick={() => {
+          setSelectedTool("pencil");
+        }}
+        isActivated={selectedTool === "pencil"}
+      />
+      <IconButton
+        icon={<Eraser size={15} strokeWidth={2} />}
+        onClick={() => {
+          setSelectedTool("eraser");
+        }}
+        isActivated={selectedTool === "eraser"}
+      />
+    </div>
   );
 }
