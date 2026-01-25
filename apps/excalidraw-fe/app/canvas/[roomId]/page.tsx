@@ -1,22 +1,12 @@
-"use client";
-import initDraw from "@/draw";
-import { useEffect, useRef } from "react";
+import RoomCanvas from "@/app/components/RoomCanvas";
 
-export default function Canvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      initDraw(canvasRef.current);
+export default async function CanvasPage({params}: {
+    params: {
+        roomId: string
     }
-  }, [canvasRef]);
+}) {
+    const roomId = (await params).roomId;
+    console.log(roomId);
 
-  return (
-    <div className="fixed inset-0 overflow-hidden bg-[#121212]">
-      <canvas
-        ref={canvasRef}
-        className="block touch-none" // 'block' removes default inline spacing
-      />
-    </div>
-  );
+    return <RoomCanvas roomId={roomId} />
 }
