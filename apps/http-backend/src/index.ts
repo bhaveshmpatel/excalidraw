@@ -95,12 +95,6 @@ app.post("/room", middleware, async (req, res) => {
       message: "Room already exist with this name",
     });
   }
-  const room = await prismaClient.room.create({
-    data: {
-      slug: parsedData.data.name,
-      adminId: userId,
-    },
-  });
 });
 
 app.get("/chats/:roomId", async (req, res) => {
