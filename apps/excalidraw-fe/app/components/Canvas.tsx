@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./IconButton";
-import { ArrowRight, Circle, Eraser, LineSquiggle, Square, Text } from "lucide-react";
+import { ArrowRight, Circle, Eraser, LineSquiggle, Square, Text, Minus, Plus } from "lucide-react";
 import { Game } from "@/draw/Game";
 
 export type Tool = "circle" | "rect" | "pencil" | "arrow" | "text" | "eraser";
@@ -9,6 +9,7 @@ export default function Canvas({ roomId, socket }: { roomId: string; socket: Web
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedTool, setSelectedTool] = useState<Tool>("circle");
   const [game, setGame] = useState<Game>();
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     game?.setTool(selectedTool);
@@ -25,15 +26,24 @@ export default function Canvas({ roomId, socket }: { roomId: string; socket: Web
     }
   }, [canvasRef]);
 
+  const handleZoom = (newZoom: number) => {
+    setZoom(newZoom);
+    game?.setZoom(newZoom);
+  };
+
   return (
     <>
-      <canvas
-        ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
-        className="block touch-none" // 'block' removes default inline spacing
-      />
+      <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} className="block touch-none" />
       <Topbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
+      <div className="fixed bottom-4 left-4 flex gap-2">
+        <button className="p-2 bg-[#232329] rounded-lg hover:bg-zinc-700 text-white transition-colors" onClick={() => handleZoom(Math.max(0.1, zoom - 0.1))}>
+          <Minus size={20} />
+        </button>
+        <span className="p-2 bg-[#232329] rounded-lg text-white min-w-[60px] text-center">{Math.round(zoom * 100)}%</span>
+        <button className="p-2 bg-[#232329] rounded-lg hover:bg-zinc-700 text-white transition-colors" onClick={() => handleZoom(zoom + 0.1)}>
+          <Plus size={20} />
+        </button>
+      </div>
     </>
   );
 }

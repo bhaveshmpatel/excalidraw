@@ -33,6 +33,9 @@ export class Game {
   private startY: number = 0;
   private selectedTool: Tool = "circle";
   socket: WebSocket;
+  private scale: number = 1;
+  private offsetX: number = 0;
+  private offsetY: number = 0;
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     this.canvas = canvas;
@@ -50,7 +53,54 @@ export class Game {
     this.canvas.removeEventListener("pointerdown", this.mouseDownHandler);
     this.canvas.removeEventListener("pointerup", this.mouseUpHandler);
     this.canvas.removeEventListener("pointermove", this.mouseMoveHandler);
+    this.canvas.removeEventListener("wheel", this.onWheel);
   }
+
+  setZoom(scale: number) {
+    // Zoom around center
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    const worldCenter = {
+      x: (centerX - this.offsetX) / this.scale,
+      y: (centerY - this.offsetY) / this.scale,
+    };
+
+    this.scale = scale;
+    this.offsetX = centerX - worldCenter.x * this.scale;
+    this.offsetY = centerY - worldCenter.y * this.scale;
+
+    this.clearCanvas();
+  }
+
+  onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+
+    if (e.ctrlKey || e.metaKey) {
+      // Zoom Logic
+      const zoomIntensity = 0.1;
+      const wheel = e.deltaY < 0 ? 1 : -1;
+      const zoom = Math.exp(wheel * zoomIntensity);
+
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      const worldMouse = {
+        x: (mouseX - this.offsetX) / this.scale,
+        y: (mouseY - this.offsetY) / this.scale,
+      };
+
+      const newScale = this.scale * zoom;
+      this.scale = newScale;
+      this.offsetX = mouseX - worldMouse.x * this.scale;
+      this.offsetY = mouseY - worldMouse.y * this.scale;
+    } else {
+      // Pan Logic
+      this.offsetX -= e.deltaX;
+      this.offsetY -= e.deltaY;
+    }
+
+    this.clearCanvas();
+  };
 
   setTool(tool: "circle" | "pencil" | "rect" | "text" | "arrow" | "eraser") {
     this.selectedTool = tool;
@@ -74,10 +124,12 @@ export class Game {
   }
 
   clearCanvas() {
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.strokeStyle = "white";
     this.ctx.fillStyle = "#121212";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.setTransform(this.scale, 0, 0, this.scale, this.offsetX, this.offsetY);
 
     this.existingShapes.map((shape) => {
       if (shape.type === "rect") {
@@ -91,15 +143,15 @@ export class Game {
     });
   }
 
-  mouseDownHandler = (e) => {
+  mouseDownHandler = (e: PointerEvent) => {
     this.clicked = true;
-    this.startX = e.clientX;
-    this.startY = e.clientY;
-  }
-  mouseUpHandler = (e) => {
+    this.startX = (e.clientX - this.offsetX) / this.scale;
+    this.startY = (e.clientY - this.offsetY) / this.scale;
+  };
+  mouseUpHandler = (e: PointerEvent) => {
     this.clicked = false;
-    const width = e.clientX - this.startX;
-    const height = e.clientY - this.startY;
+    const width = (e.clientX - this.offsetX) / this.scale - this.startX;
+    const height = (e.clientY - this.offsetY) / this.scale - this.startY;
 
     //@ts-ignore
     const selectedTool = this.selectedTool;
@@ -137,11 +189,11 @@ export class Game {
         roomId: this.roomId,
       }),
     );
-  }
-  mouseMoveHandler = (e) => {
+  };
+  mouseMoveHandler = (e: PointerEvent) => {
     if (this.clicked) {
-      const width = e.clientX - this.startX;
-      const height = e.clientY - this.startY;
+      const width = (e.clientX - this.offsetX) / this.scale - this.startX;
+      const height = (e.clientY - this.offsetY) / this.scale - this.startY;
       this.clearCanvas();
       this.ctx.strokeStyle = "white";
 
@@ -158,11 +210,12 @@ export class Game {
         this.ctx.closePath();
       }
     }
-  }
+  };
 
   initMouseHandlers() {
     this.canvas.addEventListener("pointerdown", this.mouseDownHandler);
     this.canvas.addEventListener("pointerup", this.mouseUpHandler);
     this.canvas.addEventListener("pointermove", this.mouseMoveHandler);
+    this.canvas.addEventListener("wheel", this.onWheel, { passive: false });
   }
 }

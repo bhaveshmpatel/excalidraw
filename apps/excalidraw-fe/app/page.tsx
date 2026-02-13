@@ -99,7 +99,10 @@ export default function Home() {
         {/* Hero Section */}
         <section className="container mx-auto px-6 mb-32 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-zinc-400 mb-8 hover:bg-white/10 transition-colors cursor-default">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex size-2 m-auto rounded-full bg-green-500"></span>
+            </span>
             Open Source Collaborative Whiteboard
           </div>
 
